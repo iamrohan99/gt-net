@@ -2,7 +2,7 @@ name: Update Links and Deploy
 
 on:
   schedule:
-    - cron: '*/30 * * * *' # Runs every 30 minutes
+    - cron: '0 * * * *' # Runs every hour at the start of the hour
   push:
     branches:
       - main
@@ -55,8 +55,8 @@ jobs:
 
       - name: Configure Git
         run: |
-          git config --global user.email "prolladmail@gmail.com"
-          git config --global user.name "Prollad99"
+          git config --global user.email "rohan735234@gmail.com"
+          git config --global user.name "iamrohan99"
 
       - name: Commit and Push changes
         env:
@@ -70,7 +70,7 @@ jobs:
 
           # Push changes, retry if necessary
           for i in {1..5}; do
-            git push https://x-access-token:${{ secrets.ACTIONS_DEPLOY_KEY }}@github.com/Prollad99/gmtwst.git && break
+            git push https://x-access-token:${{ secrets.ACTIONS_DEPLOY_KEY }}@github.com/iamrohan99/gt-net.git && break
             echo "Retry $i: Push failed, retrying in 5 seconds..."
             sleep 5
             git pull --rebase || true
