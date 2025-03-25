@@ -1,0 +1,77 @@
+name: Update Links and Deploy
+
+on:
+  schedule:
+    - cron: '*/30 * * * *' # Runs every 30 minutes
+  push:
+    branches:
+      - main
+
+jobs:
+  update-links:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Cache node modules
+        uses: actions/cache@v3
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-
+
+      - name: Install system dependencies (jq)
+        run: sudo apt-get update && sudo apt-get install -y jq
+
+      - name: Install npm dependencies (if package.json exists)
+        run: |
+          if [ -f package.json ]; then
+            echo "package.json found, installing dependencies..."
+            if [ -f package-lock.json ]; then
+              npm ci
+            else
+              npm install
+            fi
+          else
+            echo "No package.json found. Skipping npm install."
+          fi
+
+      - name: Fetch and Update Links
+        run: |
+          node index-js/gametwist.js
+          echo "Content of links-json/gametwist.json:"
+          cat links-json/gametwist.json
+
+      - name: Update Reward Page
+        run: |
+          echo '<div class="rewards">' > static/rewards/gametwist.md
+          jq -r '.[] | "  <p><a href=\"" + .href + "\">" + .text + "</a></p>\n"' links-json/gametwist.json >> static/rewards/gametwist.md
+          echo '</div>' >> static/rewards/gametwist.md
+          echo "Content of static/rewards/gametwist.md:"
+          cat static/rewards/gametwist.md
+
+      - name: Configure Git
+        run: |
+          git config --global user.email "prolladmail@gmail.com"
+          git config --global user.name "Prollad99"
+
+      - name: Commit and Push changes
+        env:
+          ACTIONS_DEPLOY_KEY: ${{ secrets.ACTIONS_DEPLOY_KEY }}
+        run: |
+          git add static/rewards/gametwist.md links-json/gametwist.json
+          git commit -m "Update gametwist reward links" || true
+
+          # Pull latest changes to avoid conflicts
+          git pull --rebase || true
+
+          # Push changes, retry if necessary
+          for i in {1..5}; do
+            git push https://x-access-token:${{ secrets.ACTIONS_DEPLOY_KEY }}@github.com/Prollad99/gmtwst.git && break
+            echo "Retry $i: Push failed, retrying in 5 seconds..."
+            sleep 5
+            git pull --rebase || true
+          done

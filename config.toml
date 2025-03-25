@@ -1,0 +1,11 @@
+baseURL = "https://www.gametwistfreecoins.net"
+languageCode = "en-us"
+title = "GameTwist Free Coins"
+
+[markup]
+  [markup.goldmark]
+    [markup.goldmark.renderer]
+      unsafe = true
+
+[taxonomies]
+  tag = "tags"
